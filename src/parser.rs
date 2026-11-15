@@ -1,5 +1,5 @@
-use crate::tokens::{Token, TokenType};
 use crate::parser::ParseErrorType::*;
+use crate::tokens::{Token, TokenType};
 use std::iter::Peekable;
 use std::vec::IntoIter;
 
@@ -9,7 +9,9 @@ pub fn parser(tokens: Vec<Token>) -> Result<Vec<Statement>, Vec<ParseError>> {
     let mut statements = vec![];
     loop {
         match tokens.next().unwrap_or(Token::EOF).get_token_type() {
-            TokenType::Questionmark => { parse_function_or_declare(tokens); }
+            TokenType::Questionmark => {
+                parse_function_or_declare(tokens);
+            }
             TokenType::Eof => break,
             _ => break,
         }
@@ -56,9 +58,32 @@ fn parse_function_or_declare(
         }
         TokenType::Equals => {
             let token = tokens.peek().expect("EOF got through equals token check");
-            let type_of = match Type::from_token(&token)  {
+            let type_of = match Type::from_token(&token) {
                 Some(t) => t,
-                None && token
+                None => {
+                    let mut tokens_for_type_check = tokens.clone();
+                    loop {
+                        let token = tokens_for_type_check.next().expect("EOF got through check");
+                        match token.get_token_type() {
+                            TokenType::Number(_) => {
+                                break Type::Num;
+                            }
+                            TokenType::Bool(_) => {
+                                break Type::Bol;
+                            }
+                            TokenType::Decimal(_) => {
+                                break Type::Dec;
+                            }
+                            TokenType::Eof | TokenType::Semicolon => {
+                                return ParseError::from_token(
+                                    &token,
+                                    CouldNotInferTypeOfDeclaredVar,
+                                );
+                            }
+                            _ => continue,
+                        }
+                    }
+                }
             };
             return parse_declare(tokens, type_of, identifier);
         }
@@ -119,12 +144,55 @@ fn parse_function_or_declare(
     }
 }
 
+fn parse_expr(
+    expr_tokens: Vec<Token>,
+    expr_l: Option<Expression>
+) -> Result<Expression, ParseError> {
+    let expr_tokens = expr_tokens.into_iter().peekable();
+    let tokenl: (Token, u8) = match expr_tokens.next() {
+        Some(t) => {
+            let s = match t.get_token_type() {
+                TokenType::Minus | TokenType::OpenParen | TokenType::Exclamationmark => 3u8,
+                TokenType::Multiply | TokenType::Divide | TokenType::Modulo => 2u8,
+                TokenType::Bool(_)
+                | TokenType::Number(_)
+                | TokenType::Decimal(_)
+                | TokenType::Identifier(_) => 0u8,
+                _ => return ParseError::from_token(&t, InvalidExpression),
+            };
+            (t, s)
+        }
+        None => panic!("EOF got through token check"),
+    };
+    let token1: (Token, u8) = match expr_tokens.next() {
+        Some()
+    }
+    Ok(())
+}
+
 fn parse_declare(
     mut tokens: Peekable<IntoIter<Token>>,
     type_of: Type,
     identifier: String,
 ) -> Result<Statement, ParseError> {
-    ()
+    let mut expr = vec![];
+    loop {
+        let token = tokens
+            .next()
+            .expect("EOF got through semicolon token check");
+        if token.get_token_type() == &TokenType::Semicolon
+            || token.get_token_type() == &TokenType::Eof
+        {
+            break;
+        }
+        expr.push(token);
+    }
+    let value = parse_expr(tokens, expr)?;
+    Ok(Statement::Declare {
+        identifier,
+        value,
+        type_of,
+    })
 }
 
 fn parse_function(
@@ -141,13 +209,13 @@ pub struct ParseError {
     line_number: u64,
 }
 impl ParseError {
-    fn from_token(token: &Token, error: ParseErrorType) -> Result<Statement, Self> {
+    fn from_token<T>(token: &Token, error: ParseErrorType) -> Result<T, Self> {
         Err(ParseError {
             type_of: error,
             line_number: token.get_line(),
         })
     }
-    fn from_line(line: u64, error: ParseErrorType) -> Result<Statement, Self> {
+    fn from_line<T>(line: u64, error: ParseErrorType) -> Result<T, Self> {
         Err(ParseError {
             type_of: error,
             line_number: line,
@@ -164,7 +232,10 @@ pub enum ParseErrorType {
     ExpectedCloseSq,
     ExpectedOpenBrace,
     ExpectedValue,
+    ExpectedExpression,
+    InvalidExpression,
     InvalidTypeAnnotation,
+    CouldNotInferTypeOfDeclaredVar,
 }
 
 pub enum Statement {

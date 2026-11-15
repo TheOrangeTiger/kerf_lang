@@ -77,6 +77,20 @@ pub fn lex_code(code: String) -> Result<Vec<Token>, Vec<LexError>> {
                 }
                 _ => tokens.push(Token::new(TokenType::Divide, line_number)),
             },
+            Some('&') => match code.peek() {
+                Some('&') => {
+                    code.next();
+                    tokens.push(Token::new(TokenType::And, line_number));
+                }
+                _ => errors.push(LexError::InvalidToken("&".to_string(), line_number)),
+            },
+            Some('|') => match code.peek() {
+                Some('|') => {
+                    code.next();
+                    tokens.push(Token::new(TokenType::Or, line_number));
+                }
+                _ => errors.push(LexError::InvalidToken("|".to_string(), line_number)),
+            },
             Some('(') => tokens.push(Token::new(TokenType::OpenParen, line_number)),
             Some(')') => tokens.push(Token::new(TokenType::CloseParen, line_number)),
             Some('{') => tokens.push(Token::new(TokenType::OpenBrace, line_number)),
@@ -147,8 +161,9 @@ mod tests {
     #[test]
     fn times_equals() {
         assert_eq!(
-            lex_code("x *= 36;".to_string()),
+            lex_code("?x *= 36;".to_string()),
             Ok(vec![
+                Token::new(Questionmark, 1),
                 Token::new(Identifier("x".into()), 1),
                 Token::new(MultiplyEqual, 1),
                 Token::new(Number(36), 1),

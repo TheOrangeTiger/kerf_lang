@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     token_type: TokenType,
     line_number: u64,
@@ -31,7 +31,7 @@ pub enum LexError {
     InvalidNumber(String, u64),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Identifier(String),
     Number(i64),
@@ -51,6 +51,8 @@ pub enum TokenType {
     IsLessThan,
     IsGreaterThanOrEqualTo,
     IsLessThanOrEqualTo,
+    And,
+    Or,
     Equals,
     Plus,
     PlusEqual,
