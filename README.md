@@ -68,7 +68,7 @@ Example:
 
 Convention:
 
-if \[condition boolean\] { do something }
+if condition boolean { do something }
 
 Example:
 
