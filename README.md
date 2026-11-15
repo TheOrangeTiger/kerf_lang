@@ -30,7 +30,7 @@ Forbidden:
 
 ### Operations
 
-You can do all the basic operations (+ - * /), no others so far
+You can do all the basic operations (+ - * / %), no others so far
 
 ### General Idea
 
@@ -86,12 +86,12 @@ if x==16 {
 
 Convention:
 
-while \[condition boolean\] { do something }
+while condition boolean { do something }
 
 Example:
 
 ```kerf
-while [x!=10] {
+while x!=10 {
   print(x);
   x += 1;
 }
